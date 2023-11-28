@@ -1,0 +1,8 @@
+azure devops:
+- create repo
+- create dockerfile 
+- create helm chart 
+- upload to repo 
+- create service connection of k8s 
+- create service connection of docker hub
+

@@ -1,0 +1,12 @@
+kubernetesClusterDomain: cluster.local
+web:
+  nginx:
+    image:
+      repository: nginx
+      tag: latest
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  replicas: 1
+  type: LoadBalancer

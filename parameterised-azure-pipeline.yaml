@@ -1,0 +1,93 @@
+parameters:
+- name: domain
+  displayName: ingress domain
+  type: string
+  default: devweb.tech
+  values:
+    - stgweb.tech
+    - devweb.tech
+    - testweb.tech
+
+- name: namespace
+  displayName: kubernetes namespace
+  type: string
+  default: webdev
+  values:
+    - web
+    - webstg
+    - webdev
+    - webtest
+
+- name: reactAppStage
+  displayName: React App Stagee
+  type: string
+  default: development
+  values:
+    - prod
+    - development
+    - test
+    - stage
+
+- name: cluster
+  displayName: aks cluster
+  type: string
+  default: ind-aks
+  values:
+    - ind-aks
+    - aust-aks
+
+pool:
+  name: AzureAgentPool
+
+steps:
+
+- task: Bash@3
+  displayName: 'Removing old Image'
+  inputs:
+    targetType: 'inline'
+    script: 'docker system prune -f'
+
+- task: Docker@0
+  displayName: 'BuildAnServerImage'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryConnection: 'acr'
+    dockerFile: './Dockerfile'
+    imageName: 'server:$(Build.BuildId)'
+
+- task: Docker@0
+  displayName: 'PushAnServerImage'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryConnection: 'acr'
+    action: 'Push an image'
+    imageName: 'server:$(Build.BuildId)'
+
+- task: replacetokens@5
+  displayName: 'replaceImageTag'
+  inputs:
+    rootDirectory: './mychart'
+    targetFiles: '**/values.yaml'
+    encoding: 'auto'
+    tokenPattern: 'azpipelines'
+    writeBOM: true
+    actionOnMissing: 'warn'
+    keepToken: false
+    actionOnNoFiles: 'continue'
+    enableTransforms: false
+    enableRecursion: false
+    useLegacyPattern: false
+    enableTelemetry: true
+
+- task: HelmDeploy@0
+  displayName: 'HelmDeploy'
+  inputs:
+    connectionType: 'Kubernetes Service Connection'
+    kubernetesServiceConnection: '${{ parameters.cluster }}'
+    releaseName: 'milana-app'
+    command: 'upgrade'
+    chartType: 'FilePath'
+    chartPath: './mychart'
+    valueFile: './mychart/values.yaml'
+    namespace: '${{ parameters.namespace }}'
+    overrideValues: 'ingress.host=${{ parameters.domain }},clientDeployment.client.env.reactAppStage=${{ parameters.reactAppStage }},serverDeployment.server.env.reactAppStage=${{ parameters.reactAppStage }}' 

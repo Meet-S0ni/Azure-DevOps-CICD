@@ -37,15 +37,9 @@ parameters:
     - aust-aks
 
 pool:
-  name: AzureAgentPool
+  vmImage: ubuntu-latest
 
 steps:
-
-- task: Bash@3
-  displayName: 'Removing old Image'
-  inputs:
-    targetType: 'inline'
-    script: 'docker system prune -f'
 
 - task: Docker@0
   displayName: 'BuildAnServerImage'
